@@ -1,0 +1,7 @@
+preload days
+
+!smalltalk = | input/%B.txt |> ./run.sh %g > %o |> out/%B.txt
+
+run ./Tuprules
+
+: foreach days/day*.st |> !smalltalk |>
