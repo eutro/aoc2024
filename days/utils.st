@@ -1,39 +1,29 @@
+"--- AOC helper class ---"
 Object subclass: AOC []
 AOC class extend [
-    | savedP1 savedP2 mapper getArg |
+    | savedP1 savedP2 mapper getInput |
+    input: inpBlock [ getInput := inpBlock ]
     part1: p1Block [ savedP1 := p1Block ]
     part2: p2Block [ savedP2 := p2Block ]
-    map: mapBlock [ mapper := mapBlock ]
-    arg: argBlock [ getArg := argBlock ]
+    result: mapBlock [ mapper := mapBlock ]
 
-    output: value part: part
-    [ FileStream stdout << 'Part '; << part; << ': '; << value; nl. ]
+    output: value part: part [ stdout << 'Part ' << part << ': ' << value; nl. ]
 
     runPart: saved part: part arg: arg
     [ saved ifNotNil: [
-        | mapped |
-        mapped := mapper value: arg value: saved.
+        | mapped | mapped := mapper value: arg value: saved.
         self output: mapped part: part ] ]
 
     run
-    [ | arg |
-      arg := getArg value.
-      self runPart: savedP1 part: 1 arg: arg.
-      self runPart: savedP2 part: 2 arg: arg. ]
+    [ | inp | inp := getInput value.
+      self runPart: savedP1 part: 1 arg: inp.
+      self runPart: savedP2 part: 2 arg: inp. ]
 
     "TODO: save as an image?"
     finish [ self run ]
 ]
 
-Iterable extend [
-    sum [ ^self fold: [ :l :r | l + r ] ]
-    toList
-    [ | list |
-      list := OrderedCollection new.
-      self do: [:x | list add: x].
-      ^list ]
-]
-
+"--- Scanf ---"
 Object subclass: ScannerState [
     | scanner oc dispatch failed |
     init: sc
@@ -98,7 +88,7 @@ ScannerState class extend [
 ]
 Object subclass: Scanner [
     | dispatch |
-    init
+    initialize
     [ dispatch := Dictionary new.
       dispatch at: $% put: [ :s :st | s require: $% on: st ].
       dispatch at: $d put: [ :s :st | s parseIntOn: st ].
@@ -109,8 +99,7 @@ Object subclass: Scanner [
     dispatchFor: c [ ^dispatch at: c ifAbsent: [[ :s :st | s badCmd: c ]] ]
 
     scanf: fmt on: stream
-    [ | s |
-      s := ScannerState new: self.
+    [ | s | s := ScannerState new: self.
       fmt do: [ :c | s accept: c on: stream.
                 s failed ifTrue: [ ^nil ] ].
       ^s finish ]
@@ -119,12 +108,31 @@ Scanner class extend [
     | defaultsc |
     default [ ^defaultsc ]
     default: it [ defaultsc := it ]
-    new [ |r| r := super new. r init. ^r ]
 ]
 Scanner default: Scanner new.
 
+"--- Extensions ---"
 Object extend [
-    memfn: selector [ DirectedMessage receiver: self selector: selector ]
+    memfn: selector [ ^DirectedMessage receiver: self selector: selector ]
+]
+
+Iterable extend [
+    sum [ ^self fold: [ :l :r | l + r ] ]
+    toList [ ^self toCollection: OrderedCollection ]
+    toBag [ ^self toCollection: Bag ]
+    toSet [ ^self toCollection: Set ]
+
+    toCollection: clazz [ ^self intoCollection: clazz new ]
+    intoCollection: acc [ self do: [:x | acc add: x]. ^acc ]
+]
+
+Collection extend [
+    transposed
+    [ ^(self size <= 0) ifTrue:
+           [ #() ] ifFalse:
+           [ | selfArr | selfArr := self asArray.
+             (1 to: (self at: 1) size) collect: [
+                 :i | selfArr collect: [ :elt | elt at: i ifAbsent: [nil] ] ] ] ]
 ]
 
 Stream extend [
@@ -135,12 +143,19 @@ Stream extend [
     [ ^(self scanf: fmt) ifNotNil: [ :it | block valueWithArguments: it ] ]
 
     whilePeek: pred do: block
-    [ [ self peek ifNil: [ false ]
-                  ifNotNil: [ :it | pred value: it ] ]
+    [ [ self peek ifNil: [ false ] ifNotNil: [ :it | pred value: it ] ]
           whileTrue: [ block value: self next ] ]
 ]
 
 String extend [
     scanf: fmt [ ^(ReadStream on: self) scanf: fmt ]
     scanf: fmt with: block [ ^(ReadStream on: self) scanf: fmt with: block ]
+]
+
+BlockClosure extend [
+    asSpreader [ ^[ :args | self valueWithArguments: args ] ]
+]
+
+Array extend [
+    letArrayInBlock: block [ ^block valueWithArguments: self ]
 ]
