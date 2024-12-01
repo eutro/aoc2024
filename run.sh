@@ -5,7 +5,7 @@ cd "$DIR" || exit 1
 
 if [ -z "$1" ]
 then DAYN="$(date +%d)"
-else DAYN="$1"
+else DAYN="$1"; shift
 fi
 DAY="$(echo "$DAYN" | sed 's/^0*//')"
 DAYP="$(printf "%02d" "$DAY")"
