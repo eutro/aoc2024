@@ -22,4 +22,4 @@ else
     fi
 fi
 
-exec gst "days/utils.st" "days/day$DAYP.st" < "$AOC_INPUT"
+exec gst -g "days/utils.st" "days/day$DAYP.st" < "$AOC_INPUT"

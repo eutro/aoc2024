@@ -54,10 +54,16 @@ With PREFIX, read input from the buffer."
                 (expand-file-name "run.sh" aoc-root)
                 args))
          (win (selected-window)))
+    (set-process-sentinel
+     proc
+     (lambda (_proc msg)
+       (with-selected-window (get-buffer-window buf)
+         (recenter -1))))
     (unless (eq (window-buffer win) buf)
-      (pop-to-buffer buf 'display-buffer-use-least-recent-window))
-    (message "./run.sh %s" (string-join (mapcar #'shell-quote-argument args) " "))
-    (unless prefix (select-window win))))
+      (if prefix
+          (pop-to-buffer buf 'display-buffer-use-least-recent-window)
+        (display-buffer buf 'display-buffer-use-least-recent-window)))
+    (message "./run.sh %s" (string-join (mapcar #'shell-quote-argument args) " "))))
 
 (defun aoc-copy-part-answer (part)
   "Copy the answer for the given PART from *aoc-output*."

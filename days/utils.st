@@ -20,7 +20,12 @@ AOC class extend [
       self runPart: savedP2 part: 2 arg: inp. ]
 
     "TODO: save as an image?"
-    finish [ self run ]
+    finish
+    [ | startTime stopTime |
+      startTime := Time millisecondClock.
+      self run.
+      stopTime := Time millisecondClock.
+      stdout << 'Time elapsed: ' << (stopTime - startTime) << 'ms'; nl. ]
 ]
 
 "--- Scanf ---"
@@ -117,7 +122,10 @@ Object extend [
 ]
 
 Iterable extend [
-    sum [ ^self fold: [ :l :r | l + r ] ]
+    sum [ ^self inject: 0 into: [ :l :r | l + r ] ]
+    minimum [ ^self inject: FloatD infinity into: [ :l :r | l min: r ] ]
+    maximum [ ^self inject: FloatD negativeInfinity into: [ :l :r | l max: r ] ]
+
     toList [ ^self toCollection: OrderedCollection ]
     toBag [ ^self toCollection: Bag ]
     toSet [ ^self toCollection: Set ]
@@ -159,3 +167,14 @@ BlockClosure extend [
 Array extend [
     letArrayInBlock: block [ ^block valueWithArguments: self ]
 ]
+
+"Pipeline proxy class which forwards onto a boxed value"
+nil subclass: MessageChain [
+    | val |
+    pipelineValue: v [ val := v ]
+    yourself [ ^val ]
+    doesNotUnderstand: msg [ val := msg reinvokeFor: val. ^val ]
+    >* block [ ^block value: val ]
+    MessageChain class >> new [ ^self basicNew ]
+]
+Object extend [ chain [ ^MessageChain new pipelineValue: self ] ]
