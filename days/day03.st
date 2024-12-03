@@ -1,24 +1,23 @@
 Object subclass: VM [
-    | enabled total |
+    | enabled total mulOnly |
     initialize [ enabled := true. total := 0. ]
-    total [ ^total ]
+    mulOnly: it [ mulOnly := it ]
 
-    interpret: insns
-    [ insns do: [
-        :it |
-        (it scanf: 'mul(%d, %d)'
-            with: [
-                 :l :r |
-                 enabled ifTrue: [
-                     total := total + (l * r)
-                 ]
-             ])
-        ifNil: [ enabled := (it = 'do()') ]. ].
-      ^total ]
+    do: doOrDont [ mulOnly ifFalse: [ enabled := doOrDont ] ]
+    do [ self do: true ] dont [ self do: false ]
+
+    perform: insn
+    [ insn = 'do()' ifTrue: [ ^self do ].
+      insn = 'don''t()' ifTrue: [ ^self dont ].
+      enabled ifTrue: [
+          insn scanf: 'mul(%d,%d)'
+               with: [ :l :r | total := total + (l * r) ] ] ]
+
+    interpret: insns [ insns do: [ :insn | self perform: insn ]. ^total ]
 ]
 
-AOC input: [ stdin contents ];
-    part1: 'mul\([0-9]{1,3},[0-9]{1,3}\)';
-    part2: 'mul\([0-9]{1,3},[0-9]{1,3}\)|do\(\)|don''t\(\)';
-    result: [ :inp :re | VM new interpret: (inp chain allOccurrencesOfRegex: re) ];
+AOC input: [ stdin contents allOccurrencesOfRegex:
+                 'mul\([0-9]{1,3},[0-9]{1,3}\)|do\(\)|don''t\(\)' ];
+    part1: true; part2: false;
+    result: [ :insns :part | VM new mulOnly: part; interpret: insns ];
     finish
