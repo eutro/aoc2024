@@ -7,7 +7,7 @@ Object subclass: Ordering [
     | beforeMap |
     initialize [beforeMap := Dictionary new]
 
-    graphviz
+    graphviz "Very elucidating!"
     [ AOC visualizeWithExt: '.dot' do: [
               :stream |
               stream << 'digraph {'.
@@ -31,7 +31,7 @@ Object subclass: Ordering [
       ^true ]
 
     sort: man
-    [ ^man asSortedCollection: [ :x :y | ((beforeMap at: y) includes: x) ] ]
+    [ ^man asSortedCollection: [ :x :y | (beforeMap at: y) includes: x ] ]
 ]
 
 Collection extend [
@@ -45,11 +45,9 @@ AOC input: [ (stdin contents tokenize: (String with: $<10> with: $<10>))
                rules lines do: [ :rule | ord addRule: rule ].
                mans := seqs lines collect: [
                    :seq | seq chain tokenize: ','; collect: [:x | x asNumber] ].
-               "ord graphviz."
                {ord . mans} ] ];
     part1: [ :ord :mans | mans select: [ :man | ord isValid: man ] ];
-    part2: [ :ord :mans |
-             mans chain reject: [ :man | ord isValid: man ];
+    part2: [ :ord :mans | mans chain reject: [ :man | ord isValid: man ];
                   collect: [ :man | ord sort: man ] ];
     result: [ :ordAndMans :part |
               part chain valueWithArguments: ordAndMans;
