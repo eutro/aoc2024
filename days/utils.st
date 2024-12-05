@@ -22,10 +22,21 @@ AOC class extend [
     "TODO: save as an image?"
     finish
     [ | startTime stopTime |
+      (Smalltalk getenv: 'AOC_RUN') ifNil: [
+          stdout << 'AOC_RUN not set -- not running.'.
+          ^nil ].
       startTime := Time millisecondClock.
       self run.
       stopTime := Time millisecondClock.
       stdout << 'Time elapsed: ' << (stopTime - startTime) << 'ms'; nl. ]
+
+    visualizeWithExt: ext do: block
+    [ | file io |
+      file := (Smalltalk getenv: 'AOC_VIS') ifNil: [^nil].
+      file := (file,ext) asFile.
+      file printNl.
+      file parent createDirectories.
+      io := file writeStream. [ block value: io ] ensure: [io close] ]
 ]
 
 "--- Scanf ---"

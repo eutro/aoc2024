@@ -22,4 +22,7 @@ else
     fi
 fi
 
+export AOC_VIS="$DIR/vis/day$DAYP"
+export AOC_RUN=1
+
 exec gst -g "days/utils.st" "days/day$DAYP.st" < "$AOC_INPUT"
