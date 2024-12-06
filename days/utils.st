@@ -189,3 +189,62 @@ nil subclass: MessageChain [
     MessageChain class >> new [ ^self basicNew ]
 ]
 Object extend [ chain [ ^MessageChain new pipelineValue: self ] ]
+
+Object subclass: Posn [
+    | x y | x [^x] y [^y] x: n [x:=n] y: n [y:=n]
+    + o [ ^Posn x: x + o x y: y + o y ]
+    * n [ ^Posn x: x * n y: y * n ]
+    rotateCw [ ^Posn x: y y: x negated ]
+    rotateCcw [ ^Posn x: y negated y: x ]
+    rotate180 [ ^Posn x: x negated y: y negated ]
+
+    < o [ ^(x < o x) & (y < o y) ]
+    <= o [ ^(x <= o x) & (y <= o y) ]
+    > o [ ^(x > o x) & (y > o y) ]
+    >= o [ ^(x >= o x) & (y >= o y) ]
+    = o [ ^(x = o x) & (y = o y) ]
+    hash [ ^{x. y} hash ]
+
+    printOn: s [ s << '<' << x << ', ' << y << '>'. ]
+]
+Posn class extend [
+    x: x y: y [ ^Posn new x: x; y: y ]
+    up: n [ ^Posn x: 0 y: n negated ]
+    down: n [ ^Posn x: 0 y: n ]
+    left: n [ ^Posn x: n negated y: 0 ]
+    right: n [ ^Posn x: n y: 0 ]
+    up [^Posn up: 1]
+    down [^Posn down: 1]
+    left [^Posn left: 1]
+    right [^Posn right: 1]
+    zero [^Posn x: 0 y: 0]
+]
+
+Array extend [ asPosn [ ^Posn x: (self at: 1) y: (self at: 2) ] ]
+Iterable extend [ asPosns [ ^self collect: [:it | it asPosn] ] ]
+
+Object subclass: Grid [
+    | rows | rows: n [rows:=n]
+
+    at: pos [ ^(rows at: pos y ifAbsent: [^nil]) at: pos x ifAbsent: [nil] ]
+    at: pos put: elt
+    [ ^(rows at: pos y ifAbsent: [self error: 'Out of bounds'])
+           at: pos x put: elt ]
+
+    isInBounds: posn
+    [ posn > Posn zero ifFalse: [^false].
+      ^posn <= (Posn x: self width y: self height) ]
+
+    height [^rows size] width [^(rows at: 1) size]
+
+    allPosnsDo: block
+    [ (1 to: self height) do:
+          [ :y | (1 to: self width) do:
+               [ :x | block value: (Posn x: x y: y) ] ] ]
+    allPosnsOf: elt
+    [ | oc | oc := OrderedCollection new.
+      self allPosnsDo: [ :p | elt = (self at: p) ifTrue: [ oc add: p ] ].
+      ^oc ]
+
+    printOn: st [ rows do: [ :r | st << r; nl ] ]
+]
