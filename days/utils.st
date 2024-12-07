@@ -254,3 +254,30 @@ Object subclass: Grid [
 
     printOn: st [ rows do: [ :r | st << r; nl ] ]
 ]
+
+Integer extend [
+    ceilingDiv: denom [ ^((self - 1) // denom) + 1 ]
+
+    "The original implementation was incorrect. Here is the correct code:"
+    ceilingLog: radix [
+        "Answer (self log: radix) ceiling. Optimized to answer an integer."
+
+        <category: 'math methods'>
+        | me answer |
+        self < self zero ifTrue:
+             [^self arithmeticError: 'cannot extract logarithm of a negative number'].
+        radix <= radix unity ifTrue: 
+              [radix <= radix zero 
+                     ifTrue: [^self arithmeticError: 'base of a logarithm cannot be negative'].
+               radix = radix unity 
+                     ifTrue: [^self arithmeticError: 'base of a logarithm cannot be 1'].
+               ^(self floorLog: radix reciprocal) negated].
+        radix isInteger ifFalse: [^(radix coerce: self) ceilingLog: radix].
+        me := self.
+        answer := 1.
+        [me > radix] whileTrue: 
+            [me := me ceilingDiv: radix. "originally: me // radix."
+             answer := answer + 1].
+        ^answer
+    ]
+]

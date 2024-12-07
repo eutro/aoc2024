@@ -6,7 +6,9 @@ Object subclass: MulOp
     ^tgt quo: n ] ]
 MulOp subclass: CatOp
 [ tryDo: n target: tgt
-  [ | p10 | p10 := 10 raisedTo: ((n + 1) log: 10) ceiling.
+  [ | p10 |
+    p10 := (n + 1) ceilingLog: 10.
+    p10 := 10 raisedTo: p10.
     ^super tryDo: p10 target: tgt - n ] ]
 
 Object subclass: Equation [
@@ -17,24 +19,27 @@ Object subclass: Equation [
 
     printOn: dst [dst << target << ': ' << numbers]
 
+    "Backtracking search right-to-left over the number sequence."
     canSolveFrom: idx target: tgt with: ops
-    [ | n | n := numbers at: idx.
+    [ | n n1 ok | n := numbers at: idx.
       idx = 1 ifTrue: [^n = tgt].
       tgt < n ifTrue: [^false].
       ops do: [
-          :op |
-          (op tryDo: n target: tgt) ifNotNil:
-          [:it|(self canSolveFrom: idx - 1 target: it with: ops) ifTrue: [^true]]].
+          :op | n1 := op tryDo: n target: tgt.
+          n1 ifNotNil: [
+              ok := self canSolveFrom: idx - 1 target: n1 with: ops.
+              ok ifTrue: [^true] ]].
       ^false ]
     canSolveWith: ops [^self canSolveFrom: numbers size target: target with: ops]
 ]
 
 Equation class extend [
     parse: line
-    [ ^(line tokenize: ': ') letArrayInBlock:
-           [ :target :numbers |
-             Equation new target: target asNumber;
-                     numbers: ((numbers tokenize: ' ') collect: [:it|it asNumber]) ] ]
+    [^(line tokenize: ': ') letArrayInBlock: [
+         :target :numbers |
+         Equation new target: target asNumber;
+                 numbers: ((numbers tokenize: ' ')
+                               collect: [:it|it asNumber])]]
 ]
 
 AOC input: [ stdin toLines collect: [:line | Equation parse: line] ];
@@ -42,6 +47,6 @@ AOC input: [ stdin toLines collect: [:line | Equation parse: line] ];
     part2: {CatOp new. MulOp new. AddOp new};
     result: [ :eqns :part |
               eqns chain select: [:eqn | eqn canSolveWith: part];
-                    collect: [:it|it testValue];
+                    collect: [:it | it testValue];
                     sum ];
     finish.
