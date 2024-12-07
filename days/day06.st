@@ -3,56 +3,72 @@ Grid extend [
 
     visitedPosns: n [visitedPosns:=n]
     visitedPosns [^visitedPosns]
-    dir [^dir]
-    guard
-    [ guard ifNotNil: [:it|^it] ifNil:
-          [ self allPosnsDo:
-                [ :pos |
-                  (self at: pos) = $^ ifTrue: [
-                      origGuard := pos.
-                      self at: pos put: $..
-                      self resetGuard.
-                      ^guard.
-                  ]]].
-      ^nil ]
+    dir [^dir] guard [^guard]
 
-    resetGuard [ guard := origGuard. dir := Posn up. ]
+    initGuard
+    [ self allPosnsDo: [
+        :pos |
+        ((self at: pos) = $^) ifTrue: [
+            origGuard := pos.
+            self at: pos put: $..
+            self resetGuard.
+            ^guard.
+        ]]]
+
+    resetGuard
+    [ origGuard ifNil: [self initGuard].
+      guard := origGuard.
+      dir := Posn up. ]
 
     isSolid: p [ ^(self at: p) = $# ]
+    isEmpty: p [ ^(self at: p) = $. ]
 
     copy [ ^Grid new rows: rows; restore: self state ]
 
     stepGuard
-    [ self guard.
-      [self isSolid: (guard + dir)] whileTrue:
+    [ [self isSolid: guard + dir] whileTrue:
           [ dir := dir rotateCcw. ].
       guard := guard + dir. ]
 
-    state [^{self guard . self dir}]
+    state [^{guard . dir}]
     restore: st [guard := st at: 1. dir := st at: 2]
 
-    guardOob [^(self at: self guard) isNil]
+    guardOob [^(self at: guard) isNil]
 
     walkDo: block
     [ [self guardOob] whileFalse: [block value. self stepGuard] ]
 
-    hasCycle
-    [ | fast | fast := self resetGuard copy.
-      [fast guardOob] whileFalse:
-          [self stepGuard. fast stepGuard stepGuard.
-           self state = fast state ifTrue: [^true]].
+    stepToTurn
+    [ guard := guard copy.
+      [self isSolid: guard + dir] whileTrue: [dir := dir rotateCcw].
+      [self isEmpty: guard] whileTrue: [guard += dir].
+      (self isSolid: guard) ifTrue: [guard -= dir] ]
+
+    hasCycleFrom: state
+    [ | seen st |
+      seen := Set new.
+      self restore: state.
+      [self guardOob] whileFalse:
+          [self stepToTurn. st := self state.
+           (seen includes: st) ifTrue: [^true].
+           seen add: st].
       ^false ]
 ]
 
 AOC input: [ Grid new rows: stdin toLines asArray ];
-    part1: [ :grid | | posns |
-             posns := Set new.
-             grid walkDo: [posns add: grid guard].
+    part1: [ :grid | | posns prev |
+             posns := Dictionary new. prev := nil.
+             grid walkDo: [
+                 posns at: grid guard ifAbsentPut: [prev].
+                 prev := grid state].
              grid visitedPosns: posns.
-             posns ];
+             posns size ];
     part2: [ :grid | | i | i := 1.
-             grid visitedPosns select:
-                 [ :p | grid at: p put: $#. i printNl. i := i + 1.
-                   [grid hasCycle] ensure: [grid at: p put: $.] ] ];
-    result: [ :grid :part | (part value: grid resetGuard) size ];
+             grid visitedPosns removeKey: grid guard.
+             grid visitedPosns associations count:
+                 [ :ass |
+                   grid at: ass key put: $#.
+                   [grid hasCycleFrom: ass value]
+                       ensure: [grid at: ass key put: $.] ] ];
+    result: [ :grid :part | part value: grid resetGuard ];
     finish.

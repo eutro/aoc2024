@@ -7,7 +7,7 @@ AOC class extend [
     part2: p2Block [ savedP2 := p2Block ]
     result: mapBlock [ mapper := mapBlock ]
 
-    output: value part: part [ stdout << 'Part ' << part << ': ' << value; nl. ]
+    output: value part: part [ stdout << 'Part ' << part << ': ' << value; nl; flush. ]
 
     runPart: saved part: part arg: arg
     [ saved ifNotNil: [
@@ -192,8 +192,14 @@ Object extend [ chain [ ^MessageChain new pipelineValue: self ] ]
 
 Object subclass: Posn [
     | x y | x [^x] y [^y] x: n [x:=n] y: n [y:=n]
+    copy [ ^Posn x: x y: y ]
+
     + o [ ^Posn x: x + o x y: y + o y ]
+    += o [ self x: x + o x; y: y + o y. ]
+    - o [ ^Posn x: x - o x y: y - o y ]
+    -= o [ self x: x - o x; y: y - o y. ]
     * n [ ^Posn x: x * n y: y * n ]
+
     rotateCw [ ^Posn x: y y: x negated ]
     rotateCcw [ ^Posn x: y negated y: x ]
     rotate180 [ ^Posn x: x negated y: y negated ]
