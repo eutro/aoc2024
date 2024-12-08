@@ -255,6 +255,11 @@ Object subclass: Grid [
     printOn: st [ rows do: [ :r | st << r; nl ] ]
 ]
 
+Dictionary extend [
+    at: key inA: Type [^self at: key ifAbsentPut: [Type new]]
+    at: key inA: Type add: elt [ (self at: key inA: Type) add: elt ]
+]
+
 Integer extend [
     ceilingDiv: denom [ ^((self - 1) // denom) + 1 ]
 

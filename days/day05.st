@@ -1,8 +1,3 @@
-Dictionary extend [
-    at: key inA: Type [^self at: key ifAbsentPut: [Type new]]
-    at: key inA: Type add: elt [ (self at: key inA: Type) add: elt ]
-]
-
 Object subclass: Ordering [
     | beforeMap |
     initialize [beforeMap := Dictionary new]
