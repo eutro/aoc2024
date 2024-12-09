@@ -1,7 +1,7 @@
 "--- AOC helper class ---"
 Object subclass: AOC []
 AOC class extend [
-    | savedP1 savedP2 mapper getInput |
+    | savedP1 savedP2 mapper getInput actionDict |
     input: inpBlock [ getInput := inpBlock ]
     part1: p1Block [ savedP1 := p1Block ]
     part2: p2Block [ savedP2 := p2Block ]
@@ -19,12 +19,19 @@ AOC class extend [
       self runPart: savedP1 part: 1 arg: inp.
       self runPart: savedP2 part: 2 arg: inp. ]
 
+    action: name do: block
+    [ actionDict ifNil: [actionDict := Dictionary new].
+      actionDict at: name put: block ]
+
     "TODO: save as an image?"
     finish
-    [ | startTime stopTime |
-      (Smalltalk getenv: 'AOC_RUN') ifNil: [
+    [ | startTime stopTime action |
+      action := (Smalltalk getenv: 'AOC_RUN') ifNil: [
           stdout << 'AOC_RUN not set -- not running.'.
           ^nil ].
+      action := actionDict ifNotNil: [ :ad | ad at: action ifAbsent: [nil] ].
+      action ifNotNil: [ ^action value ].
+
       startTime := Time millisecondClock.
       self run.
       stopTime := Time millisecondClock.

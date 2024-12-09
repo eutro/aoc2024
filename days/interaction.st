@@ -1,21 +1,21 @@
 Object subclass: ExplorerStream [
     | stream objects | on: aStream
-    [ stream := aStream.
-      objects := OrderedCollection new. ]
+    [ stream := aStream. objects := OrderedCollection new. ]
 
-    title: title [ stream << '# ' << title ; nl. ]
-    subtitle: block [ stream << '**'. block value. stream << '**'; nl; nl. ]
+    title: title [ stream << '* ' << title; nl. ]
+    subtitle: block [ stream << '- '. block value. stream nl; nl. ]
     text: text [ text displayOn: stream ]
     nl [ stream nl ]
+    flush [ stream flush ]
 
     linkTextTo: obj name: text
-    [ |r| r := '[%1][%2]' % {text . objects size}.
+    [ |r| r := '[[aoc2024eutro:objects/%2][%1]]' % {text . objects size}.
       objects add: obj. ^r ]
 
     linkTo: obj name: text [ self text: (self linkTextTo: obj name: text). ]
 
-    section: title do: block [ self text: '## '; text: title; nl. block value ]
-    ssection: title do: block [ self text: '### '; text: title; nl. block value ]
+    section: title do: block [ self text: '** '; text: title; nl. block value ]
+    ssection: title do: block [ self text: '*** '; text: title; nl. block value ]
 ]
 ExplorerStream class extend [ on: stream [ ^super new on: stream ] ]
 
@@ -59,8 +59,45 @@ Class extend [
               :selector | | method |
               exs ssection: selector asString do:
                   [ (self sourceCodeAt: selector ifAbsent: [nil])
-                        ifNotNil: [ :source | exs text: source ]
+                        ifNotNil: [
+                      :source |
+                      exs
+                      text: '#+begin_src smalltalk'; nl;
+                      text: source; nl;
+                      text: '#+end_src'
+                  ]
                         ifNil: [ exs text: 'No source available.' ] ]; nl; nl.
           ] ]
     ]
 ]
+
+Object subclass: Explorer [
+    | what obj estream | what: n [what:=n]
+
+    explore
+    [ obj := Namespace current at: what ifAbsent: [nil].
+      obj ifNil: [self reportNotFound]
+          ifNotNil: [self doExplore].
+      self exploreLoop ]
+
+    exploreLoop
+    [ | line |
+      [ stdin atEnd ] whileFalse: [
+          line := stdin nextLine.
+          line printNl.
+      ]]
+
+    reportNotFound
+    [ stdout << what << ' is undefined.'; nl ]
+    doExplore
+    [ estream := ExplorerStream on: stdout.
+      obj emacsExploreOn: estream.
+      estream flush.
+    ]
+]
+
+AOC action: 'explore' do:
+    [ | what |
+      what := (Smalltalk getenv: 'AOC_WHAT') ifNil: ['Object'].
+      what := Symbol intern: what.
+      Explorer new what: what; explore ]

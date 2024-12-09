@@ -25,7 +25,9 @@
    (when-let ((file-name (buffer-file-name)))
      (and (string-match aoc-dayfile-pattern file-name)
           (string-to-number (match-string 1 file-name))))
-   (cadr (calendar-current-date))))
+   (progn
+     (require 'calendar)
+     (cadr (calendar-current-date)))))
 
 (defun aoc-get-out-buffer (&optional clear day)
   "Get the *aoc-output* buffer."
@@ -39,6 +41,9 @@
         (aoc-run-mode)))
     buf))
 
+(defconst aoc--run-script (expand-file-name "run.sh" aoc-root))
+(defconst aoc--explore-script (expand-file-name "explore.sh" aoc-root))
+
 (defun aoc-run (&optional prefix)
   "Run the current day.
 
@@ -48,11 +53,7 @@ With PREFIX, read input from the buffer."
          (inp-args (when prefix '("--")))
          (buf (aoc-get-out-buffer t day))
          (args (cons (number-to-string day) inp-args))
-         (proc (apply
-                #'start-process
-                "aoc-run" buf
-                (expand-file-name "run.sh" aoc-root)
-                args))
+         (proc (apply #'start-process "aoc-run" buf aoc--run-script args))
          (win (selected-window)))
     (set-process-sentinel
      proc
@@ -64,6 +65,43 @@ With PREFIX, read input from the buffer."
           (pop-to-buffer buf 'display-buffer-use-least-recent-window)
         (display-buffer buf 'display-buffer-use-least-recent-window)))
     (message "./run.sh %s" (string-join (mapcar #'shell-quote-argument args) " "))))
+
+(defun aoc-explore--filter (proc output)
+  (with-current-buffer (process-buffer proc)
+    (insert output)))
+
+(defun aoc-explore--sentinel (proc status)
+  (message status))
+
+(defun aoc-explore (what)
+  "Start an interactive explorer on WHAT for the current day."
+  (interactive "MExplore: ")
+  (let* ((day (aoc-day-number))
+         (args (list aoc--explore-script what (number-to-string day)))
+         (buf (get-buffer-create "*aoc-explore*"))
+         (proc (get-buffer-process buf)))
+    (when (process-live-p proc)
+      (quit-process proc))
+    (with-current-buffer buf
+      (erase-buffer)
+      (setq aoc-pinned-day-number day)
+      (org-mode))
+    (setq proc
+          (make-process
+           :name "aoc-explore"
+           :buffer buf
+           :command args
+           :filter #'aoc-explore--filter
+           :sentinel #'aoc-explore--sentinel))
+    (pop-to-buffer buf 'display-buffer-use-least-recent-window)))
+
+(defun aoc-follow-link (path prefix)
+  "Follow the AoC link PATH with universal PREFIX argument."
+  (aoc-explore link))
+
+(with-eval-after-load 'ol
+  (setf (alist-get "aoc2024eutro" org-link-parameters nil nil #'equal)
+        (list :follow #'aoc-follow-link)))
 
 (defun aoc-copy-part-answer (part)
   "Copy the answer for the given PART from *aoc-output*."
