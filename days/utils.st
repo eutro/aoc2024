@@ -261,6 +261,14 @@ Object subclass: Grid [
 
     printOn: st [ rows do: [ :r | st << r; nl ] ]
 ]
+Grid class extend [
+    width: w height: h initWith: block
+    [ | rows |
+      rows := (1 to: h) collect: [
+          :y | (1 to: h) collect: [
+              :x | block value: (Posn x: x y: y)]].
+      ^self new rows: rows ]
+]
 
 Dictionary extend [
     at: key inA: Type [^self at: key ifAbsentPut: [Type new]]

@@ -66,10 +66,44 @@ Link subclass: Block [
     printOn: st [st << '#[' << len << ']@' << pos]
 ]
 
+LinkedList subclass: FreeList [
+    | searchCache |
+
+    initialize [ searchCache := nil ]
+
+    searchCache
+    [ searchCache ifNil: [
+        searchCache := Array new: 9 withAll: self first].
+      ^searchCache ]
+
+    cachedLinkForSize: sz [ ^self searchCache at: sz ]
+    cachedLinkForSize: sz put: block [ searchCache at: sz put: block ]
+
+    remove: block
+    [ searchCache keysAndValuesDo: [
+        :i :elt | elt == block ifTrue: [
+            searchCache at: i put: elt nextLink ]].
+      super remove: block ]
+
+    freeForBlock: block
+    [ | link len |
+      len := block len.
+      link := self cachedLinkForSize: len.
+      [ link isNil ] whileFalse: [
+          link pos > block pos ifTrue: [
+              self cachedLinkForSize: len put: link. ^nil ].
+          link len >= len ifTrue: [
+              self cachedLinkForSize: len put: link. ^link ].
+          link nextLink
+              ifNil: [ self cachedLinkForSize: len put: link. ^nil ]
+              ifNotNil: [:it | link := it]].
+      ^nil ]
+]
+
 DriveBase subclass: DriveP2 [
     | freeList idMap lastId |
     map: m
-    [ freeList := LinkedList new.
+    [ freeList := FreeList new.
       idMap := Dictionary new.
       super map: m ]
 
@@ -101,13 +135,8 @@ DriveBase subclass: DriveP2 [
 
     compactBlock: id
     [ | block | block := idMap at: id.
-      freeList do: [
-          :free |
-          free pos > block pos ifTrue: [^self].
-          free len >= block len ifTrue: [
-              self moveBlock: block to: free.
-              ^self
-          ]]]
+      (freeList freeForBlock: block) ifNotNil: [
+          :free | self moveBlock: block to: free ]]
 ]
 
 AOC input: [ stdin nextLine ];
