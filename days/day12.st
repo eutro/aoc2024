@@ -27,8 +27,7 @@ Object subclass: UnionFind [
 
     mergeInto: parent
     [ root := parent.
-      parent addSize: size.
-      size := 0 ]
+      parent addSize: size. ]
 ]
 
 UnionFind subclass: Region [
@@ -72,7 +71,7 @@ Object subclass: GardenPlot [
     combineAt: pos
     [ | plant region |
       plant := plantGrid at: pos.
-      region := regionGrid at: pos.
+      region := (regionGrid at: pos) find.
       dirs with: dirsRot1 do: [
           :off :off2 | | offPos oPlant same1 same2 same12 |
           offPos := pos + off.
@@ -83,11 +82,11 @@ Object subclass: GardenPlot [
 
           same1
               ifTrue: [ region := region union: (regionGrid at: offPos) ]
-              ifFalse: [ region find addPerimeter: 1 ].
+              ifFalse: [ region addPerimeter: 1 ].
 
-          ((same1 not & same2 not "outer corner") |
-           (same1 & same2 & same12 not "inner corner"))
-              ifTrue: [ region find addCorners: 1 ]
+          ((same1 not and: [same2 not] "outer corner") or:
+               [same1 and: [same2 and: [same12 not]] "inner corner"])
+              ifTrue: [ region addCorners: 1 ]
           ]
     ]
 

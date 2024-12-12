@@ -25,8 +25,8 @@ fi
 export AOC_VIS="$DIR/vis/day$DAYP"
 
 export AOC_RUN
-if [ -z "$AOC_RUN" ] ; then
-    AOC_RUN=1
-fi
+if [ -z "$AOC_RUN" ] ; then AOC_RUN=1; fi
 
-exec gst --emacs-mode -g "days/utils.st" $AOC_EXTRA_FILES "days/day$DAYP.st" < "$AOC_INPUT"
+if [ -z "$GST" ] ; then GST=gst ; fi
+
+exec $GST --emacs-mode -g "days/utils.st" $AOC_EXTRA_FILES "days/day$DAYP.st" < "$AOC_INPUT"
