@@ -5,7 +5,7 @@ Object subclass: DriveBase [
     idAt: i [^ids at: i]
 
     isEmpty: i [^(ids at: i ifAbsent: [1]) isNil]
-    isFull: i [^(ids at: i ifAbsent: [nil]) isNil not]
+    isFull: i [^(ids at: i ifAbsent: [nil]) notNil]
 
     addBlock: id length: len [ len timesRepeat: [ids add: id] ]
     addFreeLength: len [ len timesRepeat: [ids add: nil] ]
@@ -17,17 +17,16 @@ Object subclass: DriveBase [
       id := 0. toPut := id.
       diskMap do: [
           :c | len := c digitValue.
-          toPut
-              ifNil: [self addFreeLength: len.
-                      id := id + 1.
-                      toPut := id]
-              ifNotNil: [self addBlock: id length: len.
-                         toPut := nil] ].
+          toPut ifNil: [self addFreeLength: len.
+                        id := id + 1.
+                        toPut := id]
+                ifNotNil: [self addBlock: id length: len.
+                           toPut := nil] ].
       ids := ids asArray ]
 
     checksum
-    [ ^((1 to: self diskSize) collect:
-            [ :i | (self idAt: i) ifNil: [0] ifNotNil: [:x | (i - 1) * x] ])
+    [ ^(1 to: self diskSize collect:
+          [ :i | (self idAt: i) ifNil: [0] ifNotNil: [:x | (i - 1) * x] ])
            sum ]
 
     compress
@@ -37,8 +36,8 @@ Object subclass: DriveBase [
       ^ids ]
 
     printOn: st
-    [ (1 to: self diskSize) do:
-          [ :i | (self idAt: i) ifNil: [st << '. '] ifNotNil: [:id | st << id << ' '] ] ]
+    [ 1 to: self diskSize do:
+        [ :i | (self idAt: i) ifNil: [st << '. '] ifNotNil: [:id | st << id << ' '] ] ]
 ]
 
 DriveBase subclass: DriveP1 [
@@ -119,11 +118,11 @@ DriveBase subclass: DriveP2 [
       super addFreeLength: len ]
 
     compact
-    [ (lastId to: 0 by: -1) do: [:id | self compactBlock: id].
+    [ lastId to: 0 by: -1 do: [:id | self compactBlock: id].
       self compress ]
 
     moveBlock: block to: free
-    [ (1 to: block len) do:
+    [ 1 to: block len do:
           [ :off |
             ids at: free pos + off put: (ids at: block pos + off).
             ids at: block pos + off put: nil.

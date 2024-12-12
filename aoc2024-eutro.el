@@ -44,6 +44,10 @@
 (defconst aoc--run-script (expand-file-name "run.sh" aoc-root))
 (defconst aoc--explore-script (expand-file-name "explore.sh" aoc-root))
 
+(defconst aoc--display-buffer-action nil
+  ;;'display-buffer-use-least-recent-window
+  )
+
 (defun aoc-run (&optional prefix)
   "Run the current day.
 
@@ -58,46 +62,90 @@ With PREFIX, read input from the buffer."
     (set-process-sentinel
      proc
      (lambda (_proc msg)
-       (with-selected-window (get-buffer-window buf)
-         (recenter -1))))
+       (when-let ((win (get-buffer-window buf)))
+         (with-selected-window win 
+           (recenter -1)))))
     (unless (eq (window-buffer win) buf)
       (if prefix
-          (pop-to-buffer buf 'display-buffer-use-least-recent-window)
-        (display-buffer buf 'display-buffer-use-least-recent-window)))
+          (pop-to-buffer buf aoc--display-buffer-action)
+        (display-buffer buf aoc--display-buffer-action)))
     (message "./run.sh %s" (string-join (mapcar #'shell-quote-argument args) " "))))
 
 (defun aoc-explore--filter (proc output)
   (with-current-buffer (process-buffer proc)
-    (insert output)))
+    (save-excursion
+      (goto-char (point-max))
+      (insert output))))
 
 (defun aoc-explore--sentinel (proc status)
-  (message status))
+  ;(message status)
+  nil)
 
-(defun aoc-explore (what)
-  "Start an interactive explorer on WHAT for the current day."
-  (interactive "MExplore: ")
+(defun aoc-explorer ()
+  "Start an interactive explorer for the current day."
+  (interactive)
   (let* ((day (aoc-day-number))
-         (args (list aoc--explore-script what (number-to-string day)))
+         (args (list aoc--explore-script (number-to-string day)))
          (buf (get-buffer-create "*aoc-explore*"))
          (proc (get-buffer-process buf)))
     (when (process-live-p proc)
-      (quit-process proc))
+      (process-send-eof proc))
     (with-current-buffer buf
       (erase-buffer)
       (setq aoc-pinned-day-number day)
-      (org-mode))
+      (org-mode)
+      (visual-line-mode))
     (setq proc
           (make-process
            :name "aoc-explore"
            :buffer buf
            :command args
+           :stderr (get-buffer-create "*aoc-explore error*")
            :filter #'aoc-explore--filter
            :sentinel #'aoc-explore--sentinel))
-    (pop-to-buffer buf 'display-buffer-use-least-recent-window)))
+    (pop-to-buffer buf aoc--display-buffer-action)
+    proc))
+
+(defun aoc-explorer--find ()
+  "Find or create the explorer process."
+  (if current-prefix-arg
+      (aoc-explorer)
+    (let (buf proc)
+      (setq buf (get-buffer "*aoc-explore*"))
+      (when buf (setq proc (get-buffer-process buf)))
+      (if (process-live-p proc)
+          (progn
+            (pop-to-buffer buf aoc--display-buffer-action)
+            proc)
+        (aoc-explorer)))))
+
+(defun aoc-explore-command (cmd)
+  "Clear the buffer and send the AoC explorer the specific command."
+  (interactive "MCommand: ")
+  (let ((proc (aoc-explorer--find))
+        (cmd (string-join (list (string-replace "\n" "" cmd) "\n"))))
+    (with-current-buffer (process-buffer proc)
+      (erase-buffer)
+      (process-send-string proc cmd))))
+
+(defun aoc-explore (what)
+  (interactive "MExplore: ")
+  (aoc-explore-command (format "explore %s" what)))
 
 (defun aoc-follow-link (path prefix)
   "Follow the AoC link PATH with universal PREFIX argument."
-  (aoc-explore link))
+  (message "Following: %s" path)
+  (aoc-explore-command (format "resolve %s" path)))
+
+(defun aoc-list-classes ()
+  "List all the classes."
+  (interactive)
+  (aoc-explore-command "list classes"))
+
+(defun aoc-list-selectors ()
+  "List all the selectors."
+  (interactive)
+  (aoc-explore-command "list selectors"))
 
 (with-eval-after-load 'ol
   (setf (alist-get "aoc2024eutro" org-link-parameters nil nil #'equal)

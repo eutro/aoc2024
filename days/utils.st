@@ -157,7 +157,7 @@ Collection extend [
     [ ^(self size <= 0) ifTrue:
            [ #() ] ifFalse:
            [ | selfArr | selfArr := self asArray.
-             (1 to: (self at: 1) size) collect: [
+             1 to: (self at: 1) size collect: [
                  :i | selfArr collect: [ :elt | elt at: i ifAbsent: [nil] ] ] ] ]
 ]
 
@@ -176,6 +176,9 @@ Stream extend [
 String extend [
     scanf: fmt [ ^(ReadStream on: self) scanf: fmt ]
     scanf: fmt with: block [ ^(ReadStream on: self) scanf: fmt with: block ]
+
+    trim [ ^self copyReplacingRegex: '\s*(.*)\s*' asRegex with: [:m | m at: 1] ]
+    trimLines [ ^(self lines collect: [:it | it trim]) join: ' ' ]
 ]
 
 BlockClosure extend [
@@ -251,21 +254,29 @@ Object subclass: Grid [
     height [^rows size] width [^(rows at: 1) size]
 
     allPosnsDo: block
-    [ (1 to: self height) do:
-          [ :y | (1 to: self width) do:
+    [ 1 to: self height do:
+          [ :y | 1 to: self width do:
                [ :x | block value: (Posn x: x y: y) ] ] ]
     allPosnsOf: elt
     [ | oc | oc := OrderedCollection new.
       self allPosnsDo: [ :p | elt = (self at: p) ifTrue: [ oc add: p ] ].
       ^oc ]
 
+    collect: block
+    [ ^Grid width: self width height: self height initWith: [
+               :p | block value: (self at: p) ] ]
+
+    keysAndValuesCollect: block
+    [ ^Grid width: self width height: self height initWith: [
+               :p | block value: p value: (self at: p) ] ]
+
     printOn: st [ rows do: [ :r | st << r; nl ] ]
 ]
 Grid class extend [
     width: w height: h initWith: block
     [ | rows |
-      rows := (1 to: h) collect: [
-          :y | (1 to: h) collect: [
+      rows := 1 to: h collect: [
+          :y | 1 to: w collect: [
               :x | block value: (Posn x: x y: y)]].
       ^self new rows: rows ]
 ]

@@ -29,4 +29,4 @@ if [ -z "$AOC_RUN" ] ; then
     AOC_RUN=1
 fi
 
-exec gst -g "days/utils.st" $AOC_EXTRA_FILES "days/day$DAYP.st" < "$AOC_INPUT"
+exec gst --emacs-mode -g "days/utils.st" $AOC_EXTRA_FILES "days/day$DAYP.st" < "$AOC_INPUT"
