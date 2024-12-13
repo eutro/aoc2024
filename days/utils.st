@@ -236,6 +236,38 @@ Posn class extend [
     zero [^Posn x: 0 y: 0]
 ]
 
+Object subclass: Mat2 [
+    | m11 m12
+      m21 m22 |
+    m11: n11 m12: n12 m21: n21 m22: n22 [m11:=n11. m12:=n12. m21:=n21. m22:=n22]
+
+    determinant [ ^(m11 * m22) - (m12 * m21) ]
+    inverse
+    [ | det r rn | det := self determinant.
+      det = det zero ifTrue: [^nil].
+      r := det reciprocal.
+      rn := r negated.
+      ^Mat2 m11: r * m22 m12: rn * m12
+            m21: rn * m21 m22: r * m11 ]
+
+    *> p [ ^Posn x: (m11 * p x) + (m12 * p y)
+                 y: (m21 * p x) + (m22 * p y) ]
+
+    printOn: st [ st << ('{ %1, %2 ; %3, %4 }' % {m11. m12. m21. m22}) ]
+]
+Mat2 class extend [
+    m11: n11 m12: n12 m21: n21 m22: n22
+    [ ^self new m11: n11 m12: n12 m21: n21 m22: n22 ]
+
+    col: a col: b
+    [ ^self m11: a x m12: b x
+            m21: a y m22: b y ]
+
+    row: a row: b
+    [ ^self m11: a x m12: a y
+            m21: b x m22: b y ]
+]
+
 Array extend [ asPosn [ ^Posn x: (self at: 1) y: (self at: 2) ] ]
 Iterable extend [ asPosns [ ^self collect: [:it | it asPosn] ] ]
 
