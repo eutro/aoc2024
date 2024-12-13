@@ -1,51 +1,28 @@
 Object subclass: Machine [
-    | vecA vecB prize |
+    | vecA vecB prize matrix |
     parse: line
     [ line scanf: 'Button A: X+%d, Y+%d Button B: X+%d, Y+%d Prize: X=%d, Y=%d'
            with: [ :aX :aY :bX :bY :pX :pY |
                    vecA := Posn x: aX y: aY.
                    vecB := Posn x: bX y: bY.
-                   prize := Posn x: pX y: pY ] ]
+                   prize := Posn x: pX y: pY.
+                   matrix := self computeMatrix ] ]
 
     printOn: st
     [ st << '{A: ' << vecA << '; B: ' << vecB << '; P: ' << prize << '}' ]
 
-    priceA [^3] priceB [^1]
+    computeMatrix
+    [ ^(Mat2 col: vecA col: vecB) inverse
+           ifNil: [self error: 'Linearly dependent'] ]
 
     solve: offV
-    [ ^(Mat2 col: vecA col: vecB) inverse
-           ifNotNil: [
-               :inv | | vec |
-               vec := inv *> (prize + offV).
-               (vec x isInteger and: [vec y isInteger])
-                   ifTrue: [^vec]
-                   ifFalse: [^nil] ]
-           ifNil: [
-               "linearly dependent -- not actually reached"
-               | slvA slvB |
-               'Linearly dependent!' displayNl.
-               slvA := self solveLinDep: vecA.
-               slvB := self solveLinDep: vecB.
-               slvA ifNil: [
-                   slvB ifNil: [^nil]
-                        ifNotNil: [^Posn x: 0 y: slvB]].
-               slvB ifNil: [^Posn x: slvA y: 0].
-               ((slvA * self priceA) <= (slvB * self priceB))
-                   ifTrue: [^Posn x: slvA y: 0]
-                   ifFalse: [^Posn x: 0 y: slvB]] ]
+    [ | vec | vec := matrix *> (prize + offV).
+      (vec x isInteger and: [vec y isInteger])
+          ifTrue: [^vec] ifFalse: [^nil] ]
 
-    tokenCost: soln
-    [ soln ifNil: [^0].
-      ^(soln x * self priceA) + (soln y * self priceB) ]
+    tokenCost: soln [ soln ifNil: [^0]. ^(soln x * 3) + soln y ]
 
     solveCost: offV [ ^self tokenCost: (self solve: offV) ]
-
-    solveLinDep: vec
-    [ | sf |
-      sf := prize x / vec x.
-      (prize y / vec y) = sf ifFalse: [^nil].
-      sf isInteger ifFalse: [^nil].
-      ^sf ]
 ]
 
 AOC input: [ stdin chain contents; tokenize: (String with: $<10> with: $<10>);
