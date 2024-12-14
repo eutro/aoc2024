@@ -74,11 +74,15 @@ Object subclass: ScannerState [
     finish [ ^oc asArray ]
 
     parseIntOn: stream
-    [ | d |
-      d := 0.
+    [ | d sf c |
+      d := 0. sf := 1. c := stream peek.
+      (c = $+) | (c = $-) ifTrue: [
+          stream next.
+          c = $- ifTrue: [sf := -1]
+      ].
       stream whilePeek: [ :c | c isDigit ] do:
              [ :c | d := d * 10 + c digitValue ].
-      oc add: d ]
+      oc add: (sf * d) ]
 
     parseStringOn: stream
     [ | s | s := OrderedCollection new.
@@ -224,7 +228,7 @@ Object subclass: Posn [
     printOn: s [ s << '<' << x << ', ' << y << '>'. ]
 ]
 Posn class extend [
-    x: x y: y [ ^Posn new x: x; y: y ]
+    x: x y: y [ ^self new x: x; y: y ]
     up: n [ ^Posn x: 0 y: n negated ]
     down: n [ ^Posn x: 0 y: n ]
     left: n [ ^Posn x: n negated y: 0 ]
@@ -272,7 +276,9 @@ Array extend [ asPosn [ ^Posn x: (self at: 1) y: (self at: 2) ] ]
 Iterable extend [ asPosns [ ^self collect: [:it | it asPosn] ] ]
 
 Object subclass: Grid [
-    | rows | rows: n [rows:=n]
+    | rows |
+    rows: n [rows:=n]
+    rows [^rows]
 
     at: pos [ ^(rows at: pos y ifAbsent: [^nil]) at: pos x ifAbsent: [nil] ]
     at: pos put: elt
@@ -319,9 +325,12 @@ Dictionary extend [
 ]
 
 Integer extend [
-    ceilingDiv: denom [ ^((self - 1) // denom) + 1 ]
+    ceilingDiv: denom [
+        "Answer (self / denom) ceiling."
+        ^((self - 1) // denom) + 1
+    ]
 
-    "The original implementation was incorrect. Here is the correct code:"
+    "Original code was incorrect:"
     ceilingLog: radix [
         "Answer (self log: radix) ceiling. Optimized to answer an integer."
 
@@ -342,5 +351,23 @@ Integer extend [
             [me := me ceilingDiv: radix. "originally: me // radix."
              answer := answer + 1].
         ^answer
+    ]
+
+    egcd: o [
+        "Answer {x . y} such that (self * x) + (o * y) = (self gcd: o)."
+        | q r0 r s0 s t0 t tmp |
+        r0 := self. r := o.
+        s0 := 1. s := 0.
+        t0 := 0. t := 1.
+
+        [r ~= 0] whileTrue: [
+            q := r0 // r.
+
+            tmp := r. r := r0 - (q * r). r0 := tmp.
+            tmp := s. s := s0 - (q * s). s0 := tmp.
+            tmp := t. t := t0 - (q * t). t0 := tmp.
+        ].
+
+        ^{s0 . t0}
     ]
 ]
