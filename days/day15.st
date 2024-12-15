@@ -7,6 +7,7 @@ Object subclass: Transaction [
     [ o updates keysAndValuesDo: [
         :pos :new | self at: pos put: new ]]
 
+    movedFrom: pos [ self at: pos put: $. ]
     at: pos put: new
     [ | old |
       old := updates at: pos ifAbsent: [nil].
@@ -36,65 +37,39 @@ Object subclass: Warehouse [
     printOn: st [ st << grid. ]
 
     findRobot
-    [ grid allPosnsDo: [
-        :it | (grid at: it) = $@ ifTrue: [
-            ^robot := it. ]].
+    [ grid allPosnsDo: [:it | (grid at: it) = $@ ifTrue: [^robot := it]].
       self error: 'No robot' ]
 
-    tryMove: src by: off
-    [ | dst blk |
+    tryMoveIn: trans from: src by: off
+    [ | blk |
       blk := grid at: src.
       blk = $. ifTrue: [^true].
       blk = $# ifTrue: [^false].
-      dst := src + off.
-      (self tryMove: dst by: off)
-          ifFalse: [^false]
-          ifTrue: [
-              grid at: src put: $..
-              grid at: dst put: blk.
-              ^true ] ]
-
-    tryMoveTrans: src by: off
-    [ | dst blk |
-      blk := grid at: src.
-      blk = $. ifTrue: [^Transaction new].
-      blk = $# ifTrue: [^nil].
 
       off x = 0 ifTrue: [
-          blk = $[ ifTrue: [^self tryMoveTrans0: src and: src + Posn right by: off].
-          blk = $] ifTrue: [^self tryMoveTrans0: src and: src + Posn left by: off].
+          blk = $[ ifTrue: [^self tryMoveIn0: trans from: src and: src + Posn right by: off].
+          blk = $] ifTrue: [^self tryMoveIn0: trans from: src and: src + Posn left by: off].
       ].
-      ^self tryMoveTrans0: src by: off ]
+      ^self tryMoveIn0: trans from: src by: off ]
 
-    tryMoveTrans0: src1 and: src2 by: off
-    [ | dst1 dst2 blk1 blk2 |
-      dst1 := src1 + off. dst2 := src2 + off.
-      blk1 := grid at: src1. blk2 := grid at: src2.
-      ^(self tryMoveTrans: dst1 by: off) ifNotNil: [
-          :th | (self tryMoveTrans: dst2 by: off) ifNotNil: [
-              :th2 |
-              th putAll: th2.
-              th at: src1 put: $..
-              th at: src2 put: $..
-              th at: dst1 put: blk1.
-              th at: dst2 put: blk2.
-              th ]]]
+    tryMoveIn0: trans from: src1 and: src2 by: off
+    [ ^(self tryMoveIn0: trans from: src1 by: off) and:
+           [self tryMoveIn0: trans from: src2 by: off] ]
 
-    tryMoveTrans0: src by: off
+    tryMoveIn0: trans from: src by: off
     [ | dst blk |
       dst := src + off.
       blk := grid at: src.
-      ^(self tryMoveTrans: dst by: off) ifNotNil: [
-          :th |
-          th at: src put: $..
-          th at: dst put: blk.
-          th ]]
+      (self tryMoveIn: trans from: dst by: off) ifTrue: [
+          trans movedFrom: src; at: dst put: blk.
+          ^true ]. ^false ]
 
     followInsn: insn
-    [ | dir |
+    [ | dir trans |
       dir := insnMap at: insn ifAbsent: [^false].
-      (self tryMoveTrans: robot by: dir) ifNotNil: [
-          :th | th performOn: grid. robot := robot + dir] ]
+      trans := Transaction new.
+      (self tryMoveIn: trans from: robot by: dir) ifTrue: [
+          trans performOn: grid. robot := robot + dir] ]
 
     runInsns [ insns do: [:it | self followInsn: it] ]
 
