@@ -177,12 +177,18 @@ Stream extend [
           whileTrue: [ block value: self next ] ]
 ]
 
-String extend [
+CharacterArray extend [
     scanf: fmt [ ^(ReadStream on: self) scanf: fmt ]
     scanf: fmt with: block [ ^(ReadStream on: self) scanf: fmt with: block ]
 
     trim [ ^self copyReplacingRegex: '\s*(.*)\s*' asRegex with: [:m | m at: 1] ]
     trimLines [ ^(self lines collect: [:it | it trim]) join: ' ' ]
+
+    splitWords [ ^self tokenize: ' ' ]
+    splitDoubleNl [ ^self tokenize: String doubleNl ]
+]
+CharacterArray class extend [
+    doubleNl [ ^self with: $<10> with: $<10> ]
 ]
 
 BlockClosure extend [
@@ -309,6 +315,8 @@ Object subclass: Grid [
                :p | block value: p value: (self at: p) ] ]
 
     printOn: st [ rows do: [ :r | st << r; nl ] ]
+
+    postCopy [ rows := rows collect: [:it | it copy] ]
 ]
 Grid class extend [
     width: w height: h initWith: block
