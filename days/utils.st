@@ -212,7 +212,6 @@ Object extend [ chain [ ^MessageChain new pipelineValue: self ] ]
 
 Object subclass: Posn [
     | x y | x [^x] y [^y] x: n [x:=n] y: n [y:=n]
-    copy [ ^Posn x: x y: y ]
 
     + o [ ^Posn x: x + o x y: y + o y ]
     += o [ self x: x + o x; y: y + o y. ]

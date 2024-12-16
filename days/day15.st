@@ -4,21 +4,21 @@ Object subclass: Transaction [
     updates [^updates]
 
     putAll: o
-    [ o updates keysAndValuesDo: [
-        :pos :new | self at: pos put: new ]]
+    [ o updates keysAndValuesDo: [:pos :new | self at: pos put: new]]
 
     movedFrom: pos [ self at: pos put: $. ]
     at: pos put: new
     [ | old |
-      old := updates at: pos ifAbsent: [nil].
-      (old isNil or: [old = $.]) ifTrue: [^updates at: pos put: new].
+      old := updates at: pos ifAbsent: [$.].
+      old = $. ifTrue: [^updates at: pos put: new].
       (new = $. or: [old = new]) ifTrue: [^nil].
       self error: ('Contradictory transaction %1 <- %2: already %3'
                        % {pos . new . old}) ]
 
+    hasMovedFrom: pos [ ^(updates at: pos ifAbsent: [nil]) notNil ]
+
     performOn: grid
-    [ updates keysAndValuesDo: [
-        :pos :new | grid at: pos put: new ] ]
+    [ updates keysAndValuesDo: [:pos :new | grid at: pos put: new] ]
 ]
 
 Object subclass: Warehouse [
@@ -42,6 +42,7 @@ Object subclass: Warehouse [
 
     tryMoveIn: trans from: src by: off
     [ | blk |
+      "(trans hasMovedFrom: src) ifTrue: [^true]. -- just makes it slower"
       blk := grid at: src.
       blk = $. ifTrue: [^true].
       blk = $# ifTrue: [^false].
