@@ -1,7 +1,6 @@
 Object subclass: MemorySpace [
     | corruption origin dirs end
-      grid steps size
-      queue seen |
+      grid size queue |
 
     initialize
     [ origin := Posn x: 1 y: 1.
@@ -10,16 +9,8 @@ Object subclass: MemorySpace [
     corruption: n [corruption := n collect: [:it | it + origin]]
     corruption [^corruption]
 
-    grid [^grid]
-
-    plotAtTime: time
-    [ | g | g := Grid width: size height: size initWith: [:i | $.].
-      g rows: (g rows collect: [:it | it asString]).
-      1 to: time do: [:i | g at: (corruption at: i) put: $#].
-      g printNl ]
-
     findExitWithInitial: initial
-    [ | stepsInitial |
+    [ | steps stepsInitial |
       size := 71.
       grid := Grid width: size height: size initWith: [
                        :i | {"blocked at: "FloatD infinity.
@@ -27,7 +18,7 @@ Object subclass: MemorySpace [
       corruption keysAndValuesDo: [
           :time :pos | (grid at: pos) at: 1 put: time ].
 
-      queue := OrderedCollection new.
+      queue := LookupTable new.
       self enqueue: origin withLastTime: ((grid at: origin) at: 1).
 
       steps := 0.
@@ -49,27 +40,28 @@ Object subclass: MemorySpace [
     stepOnce
     [ | oldQueue |
       oldQueue := queue.
-      queue := OrderedCollection new.
-      oldQueue do: [
+      queue := LookupTable new.
+      oldQueue keysAndValuesDo: [
           :posn :time | dirs do: [
-              :dir |
-              self enqueue: (posn + dir)
-                   withLastTime: time ]]
-                       asSpreader ]
+              :dir | self enqueue: posn + dir withLastTime: time ]]]
 
     enqueue: posn withLastTime: lastTime
     [ | entry bestTime |
       entry := grid at: posn.
       entry ifNil: [^false].
-      bestTime := (entry at: 1)
-                      ifNil: [lastTime]
-                      ifNotNil: [:e | lastTime min: e].
+      bestTime := lastTime min: (entry at: 1).
       (entry at: 2) ifNotNil: [
           :prevLastReachable |
-          bestTime <= prevLastReachable ifTrue: [^false]].
+          bestTime > prevLastReachable ifFalse: [^false]].
       entry at: 2 put: bestTime.
-      queue add: {posn . bestTime}.
+      queue at: posn put: bestTime.
       ^true ]
+
+    plotAtTime: time
+    [ | g | g := Grid width: size height: size initWith: [:i | $.].
+      g rows: (g rows collect: [:it | it asString]).
+      1 to: time do: [:i | g at: (corruption at: i) put: $#].
+      g printNl ]
 ]
 
 AOC input: [ | posns |

@@ -285,7 +285,7 @@ Object subclass: Grid [
     rows: n [rows:=n]
     rows [^rows]
 
-    at: pos [ ^(rows at: pos y ifAbsent: [^nil]) at: pos x ifAbsent: [nil] ]
+    at: pos [ ^(rows at: pos y ifAbsent: [^nil]) at: pos x ifAbsent: [^nil] ]
     at: pos put: elt
     [ ^(rows at: pos y ifAbsent: [self error: 'Out of bounds'])
            at: pos x put: elt ]
