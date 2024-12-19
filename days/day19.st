@@ -16,20 +16,23 @@ Object subclass: TowelChars [
     [ | dp | dp := Array new: design size + 1 withAll: 0.
       dp at: 1 put: 1.
       1 to: design size do: [
-          :i | | subtrie j c cnt |
-          cnt := dp at: i.
-          cnt > 0 ifTrue: [
-              subtrie := trie.
-              j := i.
-              [ j <= design size and: [subtrie notNil] ] whileTrue: [
-                  c := design at: j.
-                  j := j + 1.
-                  subtrie := subtrie at: c.
-                  subtrie ifNotNil: [
-                      subtrie isPresent ifTrue:
-                          [dp at: j put: cnt + (dp at: j)]].
-              ]]].
+          :i | self stepDp: dp at: i design: design with: trie].
       ^dp at: dp size. ]
+
+    stepDp: dp at: i design: design with: trie
+    [ | subtrie j c cnt |
+      cnt := dp at: i.
+      cnt = 0 ifTrue: [^self].
+      subtrie := trie.
+      j := i.
+      [ j <= design size ] whileTrue: [
+          c := design at: j.
+          j := j + 1.
+          subtrie := subtrie at: c.
+          subtrie ifNil: [^self] ifNotNil: [
+              subtrie isPresent ifTrue: [
+                  dp at: j put: cnt + (dp at: j)]]]
+    ]
 ]
 
 Object subclass: Trie [
@@ -53,8 +56,8 @@ Object subclass: Trie [
 ]
 
 AOC input: [ stdin contents splitDoubleNl letArrayInBlock: [
-               :patterns :designs |
-               | chars trie ways | chars := TowelChars new.
+               :patterns :designs | | chars trie ways | 
+               chars := TowelChars new.
                trie := Trie new.
                patterns chain tokenize: ', ';
                         collect: [:it | chars charsToDigits: it];
