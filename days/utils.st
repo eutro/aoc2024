@@ -156,6 +156,12 @@ Iterable extend [
     intoCollection: acc [ self do: [:x | acc add: x]. ^acc ]
 ]
 
+SequenceableCollection extend [
+    findFirstElt: block [ ^self at: (self findFirst: block) ]
+    findFirstElt: block ifAbsent: abs
+    [ ^self at: (self findFirst: block) ifAbsent: abs ]
+]
+
 Collection extend [
     transposed
     [ ^(self size <= 0) ifTrue:
