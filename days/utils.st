@@ -218,6 +218,7 @@ Object extend [ chain [ ^MessageChain new pipelineValue: self ] ]
 
 Object subclass: Posn [
     | x y | x [^x] y [^y] x: n [x:=n] y: n [y:=n]
+    x: nx y: ny [x := nx. y := ny]
 
     + o [ ^Posn x: x + o x y: y + o y ]
     += o [ self x: x + o x; y: y + o y. ]
@@ -383,4 +384,16 @@ Integer extend [
 
         ^{s0 . t0}
     ]
+]
+
+Random extend [
+    shuffle: coll
+    [ 1 to: coll size do: [
+          :i | | j tmp |
+          j := self between: 1 and: coll size.
+          tmp := coll at: i.
+          coll at: i put: (coll at: j).
+          coll at: j put: tmp.
+      ].
+      ^coll ]
 ]
