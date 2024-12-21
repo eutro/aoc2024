@@ -1,23 +1,30 @@
 "--- AOC helper class ---"
 Object subclass: AOC []
 AOC class extend [
-    | savedP1 savedP2 mapper getInput actionDict |
-    input: inpBlock [ getInput := inpBlock ]
-    part1: p1Block [ savedP1 := p1Block ]
-    part2: p2Block [ savedP2 := p2Block ]
+    | savedParts mapper getInput actionDict |
+
+    initialize
+    [ savedParts := Array new: 2.
+      getInput := OrderedCollection new. ]
+
+    input: inpBlock [ getInput add: inpBlock ]
+    part1: partBlock [ savedParts at: 1 put: partBlock ]
+    part2: partBlock [ savedParts at: 2 put: partBlock ]
+    partN: partBlock [ savedParts := savedParts,{partBlock} ]
     result: mapBlock [ mapper := mapBlock ]
 
     output: value part: part [ stdout << 'Part ' << part << ': ' << value; nl; flush. ]
 
-    runPart: saved part: part arg: arg
+    runPart: saved part: part args: args
     [ saved ifNotNil: [
-        | mapped | mapped := mapper value: arg value: saved.
+        | mapped |
+        mapped := mapper valueWithArguments: args,{saved}.
         self output: mapped part: part ] ]
 
     run
-    [ | inp | inp := getInput value.
-      self runPart: savedP1 part: 1 arg: inp.
-      self runPart: savedP2 part: 2 arg: inp. ]
+    [ | inps | inps := getInput asArray collect: [:it | it value].
+      savedParts keysAndValuesDo: [
+          :part :saved | self runPart: saved part: part args: inps ]]
 
     action: name do: block
     [ actionDict ifNil: [actionDict := Dictionary new].
@@ -45,6 +52,7 @@ AOC class extend [
       file parent createDirectories.
       io := file writeStream. [ block value: io ] ensure: [io close] ]
 ]
+AOC initialize.
 
 "--- Scanf ---"
 Object subclass: ScannerState [
