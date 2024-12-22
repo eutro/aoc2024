@@ -1,3 +1,9 @@
+"Represents a set of minimum-length strings, along with the length and
+ cardinality. These can be concatenated and unioned.  Maintaining the
+ anything other than the length is pointless, since the problem asks
+ for only the length of the solution, not the number of possibilities
+ (tragically), but it is helpful for debugging, and doesn't
+ particularly hurt performance."
 Object subclass: KeyseqSet [
     | seqs size length |
     size [^size]
@@ -9,24 +15,18 @@ Object subclass: KeyseqSet [
           len := self lengthOf: e.
           sz := self sizeOf: e.
           length
-              ifNil: [
-              length := len. size := sz.
-              seqs := OrderedCollection with: e.
-          ]
+              ifNil: [ length := len. size := sz.
+                       seqs := OrderedCollection with: e ]
               ifNotNil: [
                   :l |
-                  len = l ifTrue: [
-                      size := size + 1.
-                      seqs add: e.
-                  ] ifFalse: [
-                      len < l ifTrue: [
-                          length := len. size := sz.
-                          seqs := OrderedCollection with: e.
-                      ]
-                  ]]
-      ].
-      seqs := seqs asArray.
-    ]
+                  len = l ifTrue:
+                      [ size := size + sz.
+                        seqs add: e ]
+                      ifFalse:
+                      [ len < l ifTrue:
+                            [ length := len. size := sz.
+                              seqs := OrderedCollection with: e ]]]].
+      seqs := seqs asArray ]
 
     sizeOf: e [e isString ifTrue: [^1] ifFalse: [^e size]]
     lengthOf: e [e isString ifTrue: [^e size] ifFalse: [^e length]]
@@ -137,30 +137,27 @@ Keypad class extend [
 ]
 
 Object subclass: Robot [
-    | keypad controlledBy seqCache depth |
-    keypad: kp [keypad := kp. depth := 0]
-    keypad: kp controlledBy: robo
-    [keypad := kp. controlledBy := robo.
-     depth := robo ifNil: [0] ifNotNil: [:it | it depth + 1]]
+    | keypad controlledBy seqCache |
+    keypad: kp [keypad := kp]
+    keypad: kp controlledBy: robo [keypad := kp. controlledBy := robo]
 
-    depth [^depth]
     initialize [seqCache := LookupTable new]
 
     keyseqFor: str
-    [ ^seqCache at: str ifAbsent: [
-               ^seqCache at: str put: (self computeKeyseqFor: str)] ]
-
-    computeKeyseqFor: str
-    [ | steps |
+    [ | res steps |
+      res := seqCache at: str ifAbsent: [nil].
+      res ifNotNil: [^res].
       steps := 0 to: str size - 1 collect: [
         :i | | paths |
         paths := keypad pressPath: (str at: i ifAbsent: [$A])
                         to: (str at: i + 1).
         controlledBy ifNotNil: [
             paths := paths collect: [:it | controlledBy keyseqFor: it]].
-        KeyseqSet new seqs: paths
-      ].
-      ^KeyseqCat new seqs: steps ]
+        (paths size = 1)
+          ifTrue: [paths at: 1]
+          ifFalse: [KeyseqSet new seqs: paths] ].
+      res := KeyseqCat new seqs: steps.
+      ^seqCache at: str put: res ]
 ]
 
 Robot class extend [

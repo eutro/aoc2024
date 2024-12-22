@@ -50,7 +50,7 @@ AOC class extend [
       file := (file,ext) asFile.
       file printNl.
       file parent createDirectories.
-      io := file writeStream. [ block value: io ] ensure: [io close] ]
+      io := file writeStream. [block value: io] ensure: [io close] ]
 ]
 AOC initialize.
 
