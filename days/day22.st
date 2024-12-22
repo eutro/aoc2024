@@ -18,21 +18,13 @@ Object subclass: Monkey [
           "ch is theoretically in the range [0,19^4),
            so add 1 to keep it in array range"
           key := ch + 1.
-          (seenTbl at: key) == false ifTrue: [
-              "Store a linked list of seen values within the table,
-               to make resetting it easier."
-              seenTbl at: key put: prevSeen.
-              prevSeen := key.
+          (seenTbl at: key) == self ifFalse: [
+              seenTbl at: key put: self.
               newV := (prices at: i + 1) + (intoTbl at: key).
               intoTbl at: key put: newV.
               newV > localBest ifTrue: [localBest := newV].
           ]].
-      Monkey bestBananas: localBest.
-      "Reset the seen table via the linked list."
-      [prevSeen notNil] whileTrue: [
-          | tmp | tmp := seenTbl at: prevSeen.
-          seenTbl at: prevSeen put: false.
-          prevSeen := tmp. ]]
+      Monkey bestBananas: localBest. ]
 ]
 
 Monkey class extend [
@@ -62,7 +54,7 @@ AOC input: [ stdin toLines collect: [
     part1: [ :monkeys | (monkeys collect: [:it | it lastValue]) sum ];
     part2: [ :monkeys | | buyMap seenMap |
              buyMap := Array new: Monkey keyMax withAll: 0.
-             seenMap := Array new: Monkey keyMax withAll: false.
+             seenMap := Array new: Monkey keyMax withAll: nil.
              monkeys do: [:it | it collectPricesInto: buyMap seen: seenMap].
              Monkey bestBananas ];
     result: [ :monkeys :part | part value: monkeys ];
