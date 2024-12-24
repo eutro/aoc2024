@@ -164,6 +164,20 @@ Iterable extend [
     intoCollection: acc [ self do: [:x | acc add: x]. ^acc ]
 ]
 
+Set extend [
+    flip: key
+    [ (self includes: key)
+          ifTrue: [self remove: key. ^true]
+          ifFalse: [self add: key. ^false] ]
+]
+
+Iterable extend [
+    findFirstElt: block
+    [ self do: [:v | (block value: v) ifTrue: [^v]]. ^nil ]
+    findFirstElt: block ifAbsent: abs
+    [ self do: [:v | (block value: v) ifTrue: [^v]]. ^abs value ]
+]
+
 SequenceableCollection extend [
     findFirstElt: block [ ^self at: (self findFirst: block) ]
     findFirstElt: block ifAbsent: abs
