@@ -419,3 +419,77 @@ Random extend [
       ].
       ^coll ]
 ]
+
+"--- KDTree ---"
+Object subclass: KDTree [
+    from: min to: max do: block
+    [ self subclassResponsibility ]
+]
+KDTree class extend [
+    fromPoints: points
+    [ ^self fromShuffledPoints: (Random new shuffle: points asArray) ]
+
+    fromShuffledPoints: points
+    [ ^self fromShuffledPoints: points axis: 1 ]
+
+    leafMaxSize [ ^5 ]
+    fromShuffledPoints: points axis: ax
+    [ | med splits dims nextAx value |
+      points size <= self leafMaxSize ifTrue: [^KDLeaf new points: points asArray].
+      med := self guessMedian: points axis: ax.
+      dims := med size.
+      nextAx := ax \\ dims + 1.
+      value := med at: ax.
+      splits := self splitPoints: points axis: ax on: value.
+      ^KDInner new
+           left: (self fromShuffledPoints: (splits at: 1) axis: nextAx)
+           right: (self fromShuffledPoints: (splits at: 2) axis: nextAx)
+           axis: ax
+           value: value ]
+
+    splitPoints: points axis: ax on: val
+    [ | l r fairLeft |
+      l := OrderedCollection new.
+      r := OrderedCollection new.
+      fairLeft := true.
+      points do: [
+          :point | | v onLeft |
+          v := point at: ax.
+          onLeft := (v < val) or: [
+              v = val and: [fairLeft := fairLeft not. fairLeft]].
+          (onLeft ifTrue: [l] ifFalse: [r]) add: point ].
+      ^{l . r} ]
+
+    medianGuessSize [ ^5 ]
+    guessMedian: points axis: ax
+    [ | arr |
+      arr := 1 to: (points size min: self medianGuessSize)
+               collect: [:i | points at: i].
+      arr sort: [:l :r | (l at: ax) <= (r at: ax)].
+      ^arr at: arr size // 2 + 1 ]
+]
+
+KDTree subclass: KDLeaf [
+    | points |
+    points: n [points := n. "self class leafSize: points size"]
+    from: min to: max do: block [ points do: block ]
+
+    printOn: st [ st << 'lf' << points ]
+]
+KDLeaf class extend [
+    | leafSizes |
+    leafSizes [ ^leafSizes ifNil: [leafSizes := Bag new] ]
+    leafSize: sz [ self leafSizes add: sz ]
+]
+
+KDTree subclass: KDInner [
+    | left right axis value |
+    left: l right: r axis: ax value: v
+    [left:=l. right:=r. axis:=ax. value:=v]
+    from: min to: max do: block
+    [ (min at: axis) <= value ifTrue: [ left from: min to: max do: block ].
+      (max at: axis) >= value ifTrue: [ right from: min to: max do: block ] ]
+
+    printOn: st [ st << '{' << left << ' <= [' << axis << '] '
+                  << value << ' <= ' << right << '}' ]
+]
